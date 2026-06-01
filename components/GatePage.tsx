@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { BookMarked, Mail, User, MessageSquare, Loader2, Lock } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import toast from 'react-hot-toast';
+import emailjs from '@emailjs/browser';
+
+const EMAILJS_SERVICE  = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const EMAILJS_KEY      = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
 interface GatePageProps {
   onSignIn: () => void;
@@ -24,10 +29,25 @@ export const GatePage: React.FC<GatePageProps> = ({ onSignIn }) => {
     e.preventDefault();
     setLoading(true);
     try {
+      // Save to Supabase
       const { error } = await supabase
         .from('access_requests')
         .insert([{ name, email, reason }]);
       if (error) throw error;
+
+      // Send email notification
+      await emailjs.send(
+        EMAILJS_SERVICE,
+        EMAILJS_TEMPLATE,
+        {
+          from_name: name,
+          from_email: email,
+          message: reason || 'No reason provided',
+          to_email: 'larry.hales@fnf.com',
+        },
+        EMAILJS_KEY,
+      );
+
       setSubmitted(true);
     } catch (err: any) {
       toast.error(err.message || 'Failed to submit request');
