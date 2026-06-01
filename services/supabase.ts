@@ -122,3 +122,61 @@ export async function toggleFavorite(userId: string, promptId: string, currently
     await supabase.from('favorites').insert([{ user_id: userId, prompt_id: promptId }]);
   }
 }
+
+// ── Skills ───────────────────────────────────────────────────────────────────
+
+export async function fetchSkills() {
+  const { data, error } = await supabase
+    .from('skills')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function addSkill(data: any) {
+  const { error } = await supabase.from('skills').insert([data]);
+  if (error) throw error;
+}
+
+export async function updateSkill(id: string, data: any) {
+  const { error } = await supabase.from('skills').update(data).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteSkill(id: string) {
+  const { error } = await supabase.from('skills').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function incrementSkillDownload(id: string) {
+  await supabase.rpc('increment_skill_download', { skill_id: id });
+}
+
+// ── Activity logging ──────────────────────────────────────────────────────────
+
+export async function logActivity(
+  userId: string | null,
+  userEmail: string | null,
+  action: string,
+  resourceId?: string,
+  resourceName?: string,
+) {
+  supabase.from('activity_log').insert([{
+    user_id: userId,
+    user_email: userEmail,
+    action,
+    resource_id: resourceId ?? null,
+    resource_name: resourceName ?? null,
+  }]).then(() => {}); // fire-and-forget
+}
+
+// ── Access requests ───────────────────────────────────────────────────────────
+
+export async function fetchPendingRequestCount(): Promise<number> {
+  const { count } = await supabase
+    .from('access_requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending');
+  return count ?? 0;
+}
