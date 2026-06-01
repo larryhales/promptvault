@@ -33,10 +33,10 @@ export const GatePage: React.FC<GatePageProps> = ({ onSignIn }) => {
       const { error } = await supabase
         .from('access_requests')
         .insert([{ name, email, reason }]);
-      if (error) throw error;
+      if (error) throw new Error(`Database error: ${error.message}`);
 
-      // Send email notification
-      await emailjs.send(
+      // Send email notification (non-blocking — don't fail the whole form if email fails)
+      emailjs.send(
         EMAILJS_SERVICE,
         EMAILJS_TEMPLATE,
         {
@@ -46,11 +46,11 @@ export const GatePage: React.FC<GatePageProps> = ({ onSignIn }) => {
           to_email: 'larry.hales@fnf.com',
         },
         EMAILJS_KEY,
-      );
+      ).catch(err => console.warn('Email notification failed:', err));
 
       setSubmitted(true);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to submit request');
+      toast.error(err.message || 'Failed to submit request. Please try again.');
     } finally {
       setLoading(false);
     }
