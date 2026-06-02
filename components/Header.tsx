@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus, LogOut, User, ChevronDown, BookMarked, Puzzle, ShieldCheck } from 'lucide-react';
+import { Search, Plus, LogOut, User, ChevronDown, BookMarked, Puzzle, ShieldCheck, LogIn } from 'lucide-react';
 
 type View = 'prompts' | 'skills';
 
@@ -11,6 +11,7 @@ interface HeaderProps {
   currentView: View;
   onViewChange: (v: View) => void;
   onAddItem: () => void;
+  onSignIn: () => void;
   onSignOut: () => void;
   onOpenAdmin: () => void;
   showFavoritesOnly: boolean;
@@ -23,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   searchQuery, onSearchChange,
   user, isAdmin,
   currentView, onViewChange, onAddItem,
-  onSignOut, onOpenAdmin,
+  onSignIn, onSignOut, onOpenAdmin,
   showFavoritesOnly, onToggleFavorites, favoriteCount,
   pendingRequestCount,
 }) => {
@@ -132,36 +133,46 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* User menu */}
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(v => !v)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition"
-            >
-              <div className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center">
-                <User size={12} className="text-violet-600" />
-              </div>
-              <span className="hidden sm:inline max-w-[100px] truncate">
-                {user?.email?.split('@')[0]}
-              </span>
-              <ChevronDown size={13} />
-            </button>
-            {showUserMenu && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50">
-                <div className="px-3 py-2 border-b border-slate-100">
-                  <p className="text-xs text-slate-400 truncate">{user?.email}</p>
-                  {isAdmin && <p className="text-xs font-semibold text-violet-600">Admin</p>}
+          {/* User menu or Sign In */}
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(v => !v)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition"
+              >
+                <div className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center">
+                  <User size={12} className="text-violet-600" />
                 </div>
-                <button
-                  onClick={() => { onSignOut(); setShowUserMenu(false); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 transition"
-                >
-                  <LogOut size={14} />
-                  Sign out
-                </button>
-              </div>
-            )}
-          </div>
+                <span className="hidden sm:inline max-w-[100px] truncate">
+                  {user.email?.split('@')[0]}
+                </span>
+                <ChevronDown size={13} />
+              </button>
+              {showUserMenu && (
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50">
+                  <div className="px-3 py-2 border-b border-slate-100">
+                    <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                    {isAdmin && <p className="text-xs font-semibold text-violet-600">Admin</p>}
+                  </div>
+                  <button
+                    onClick={() => { onSignOut(); setShowUserMenu(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 transition"
+                  >
+                    <LogOut size={14} />
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={onSignIn}
+              className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+            >
+              <LogIn size={15} />
+              Sign in
+            </button>
+          )}
         </div>
       </div>
     </header>

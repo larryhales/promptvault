@@ -12,7 +12,7 @@ import { PromptForm } from './components/PromptForm';
 import { SkillCard } from './components/SkillCard';
 import { SkillForm } from './components/SkillForm';
 import { AdminPanel } from './components/AdminPanel';
-import { GatePage } from './components/GatePage';
+import { AuthModal } from './components/AuthModal';
 import { useAuth } from './hooks/useAuth';
 import {
   isSupabaseConfigured,
@@ -39,7 +39,7 @@ const LOCAL_FAVS_KEY = 'prompt_vault_favorites';
 type View = 'prompts' | 'skills';
 
 export default function App() {
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { user, profile, isAdmin, signIn, signUp, signInWithGoogle, signOut } = useAuth();
 
   // Data
   const [prompts, setPrompts] = useState<Prompt[]>([]);
@@ -58,6 +58,7 @@ export default function App() {
   const [editingSkill, setEditingSkill] = useState<Skill | undefined>();
   const [isSkillFormOpen, setIsSkillFormOpen] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,7 +70,6 @@ export default function App() {
 
   // Load prompts
   useEffect(() => {
-    if (!user) return;
     if (isSupabaseConfigured()) {
       fetchPrompts()
         .then(data => { setPrompts(data); setLoading(false); })
@@ -84,7 +84,7 @@ export default function App() {
 
   // Load skills
   useEffect(() => {
-    if (!user || !isSupabaseConfigured()) return;
+    if (!isSupabaseConfigured()) return;
     fetchSkills().then(setSkills).catch(console.error);
   }, [user]);
 
@@ -273,16 +273,6 @@ export default function App() {
     }
   };
 
-  // ── Gate: not logged in → show landing page ────────────────────────────────
-  if (!user) {
-    return (
-      <>
-        <Toaster position="top-right" toastOptions={{ style: { borderRadius: '12px', fontSize: '14px' } }} />
-        <GatePage onSignIn={() => {}} />
-      </>
-    );
-  }
-
   const handleAddItem = () => {
     if (currentView === 'prompts') {
       setEditingPrompt(undefined);
@@ -305,6 +295,7 @@ export default function App() {
         currentView={currentView}
         onViewChange={v => { setCurrentView(v); setSearchQuery(''); }}
         onAddItem={handleAddItem}
+        onSignIn={() => setShowAuthModal(true)}
         onSignOut={signOut}
         onOpenAdmin={() => setShowAdminPanel(true)}
         showFavoritesOnly={showFavoritesOnly}
@@ -456,6 +447,15 @@ export default function App() {
 
       {showAdminPanel && (
         <AdminPanel onClose={() => { setShowAdminPanel(false); fetchPendingRequestCount().then(setPendingCount); }} />
+      )}
+
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          signIn={signIn}
+          signUp={signUp}
+          signInWithGoogle={signInWithGoogle}
+        />
       )}
     </div>
   );
