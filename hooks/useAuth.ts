@@ -45,7 +45,15 @@ export function useAuth() {
   const signInWithGoogle = () =>
     supabase.auth.signInWithOAuth({ provider: 'google' });
 
-  const signOut = () => supabase.auth.signOut();
+  const signOut = async () => {
+    await supabase.auth.signOut({ scope: 'local' });
+    // Force clear any lingering session keys in localStorage
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('sb-'))
+      .forEach(k => localStorage.removeItem(k));
+    setUser(null);
+    setProfile(null);
+  };
 
   return {
     user,
