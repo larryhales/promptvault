@@ -24,11 +24,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
 
   const loadReport = async () => {
     const [profilesRes, activityRes] = await Promise.all([
-      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-      supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(100),
+      supabase.from('profiles').select('*'),
+      supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(200),
     ]);
-    setUsers(profilesRes.data || []);
-    setActivity(activityRes.data || []);
+    const profiles: any[] = profilesRes.data || [];
+    const acts: any[] = activityRes.data || [];
+
+    // Build user list from all unique emails in activity log + profiles
+    const emailSet = new Set<string>([
+      ...profiles.map(p => p.email),
+      ...acts.map(a => a.user_email).filter(Boolean),
+    ]);
+    const merged = Array.from(emailSet).map(email => {
+      const profile = profiles.find(p => p.email === email);
+      return { email, role: profile?.role || 'user', id: profile?.id || email };
+    });
+    setUsers(merged);
+    setActivity(acts);
   };
 
   useEffect(() => {
@@ -83,7 +95,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -241,7 +253,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                 <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
                   <Activity size={14} /> Recent Activity
                 </h3>
-                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                <div className="space-y-1.5">
                   {activity.length === 0 ? (
                     <p className="text-slate-400 text-sm">No activity logged yet.</p>
                   ) : (
