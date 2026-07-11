@@ -62,12 +62,10 @@ export const GatePage: React.FC<GatePageProps> = ({ onSignIn, signIn, signInWith
     e.preventDefault();
     setSigningIn(true);
     try {
-      if (signIn) {
-        await signIn(signInEmail, signInPassword);
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email: signInEmail, password: signInPassword });
-        if (error) throw error;
-      }
+      const { error } = signIn
+        ? await signIn(signInEmail, signInPassword)
+        : await supabase.auth.signInWithPassword({ email: signInEmail, password: signInPassword });
+      if (error) throw error;
       toast.success('Welcome back!');
     } catch (err: any) {
       toast.error(err.message || 'Sign in failed');
