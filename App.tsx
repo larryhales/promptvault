@@ -33,13 +33,14 @@ import {
   fetchPendingRequestCount,
 } from './services/supabase';
 import { BookMarked, Puzzle } from 'lucide-react';
+import { GatePage } from './components/GatePage';
 
 const LOCAL_PROMPTS_KEY = 'prompt_vault_data';
 const LOCAL_FAVS_KEY = 'prompt_vault_favorites';
 type View = 'prompts' | 'skills';
 
 export default function App() {
-  const { user, profile, isAdmin, signIn, signUp, signInWithGoogle, signOut } = useAuth();
+  const { user, profile, isAdmin, loading: authLoading, signIn, signUp, signInWithGoogle, signOut } = useAuth();
 
   // Data
   const [prompts, setPrompts] = useState<Prompt[]>([]);
@@ -282,6 +283,15 @@ export default function App() {
       setIsSkillFormOpen(true);
     }
   };
+
+  if (!authLoading && !user) {
+    return (
+      <>
+        <Toaster position="top-right" toastOptions={{ style: { borderRadius: '12px', fontSize: '14px' } }} />
+        <GatePage onSignIn={() => {}} signIn={signIn} signInWithGoogle={signInWithGoogle} />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
