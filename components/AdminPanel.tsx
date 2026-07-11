@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, XCircle, Users, Activity, Download, Copy, RefreshCw } from 'lucide-react';
+import { X, Check, XCircle, Users, Activity, Download, Copy, RefreshCw, UserCheck } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import toast from 'react-hot-toast';
 
@@ -8,8 +8,9 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
-  const [tab, setTab] = useState<'requests' | 'report'>('requests');
+  const [tab, setTab] = useState<'requests' | 'users' | 'report'>('requests');
   const [requests, setRequests] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [activity, setActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,19 +25,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
 
   const loadReport = async () => {
     const [profilesRes, activityRes] = await Promise.all([
-      supabase.from('profiles').select('*'),
+      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(200),
     ]);
-    const profiles: any[] = profilesRes.data || [];
+    const profs: any[] = profilesRes.data || [];
     const acts: any[] = activityRes.data || [];
+    setProfiles(profs);
 
     // Build user list from all unique emails in activity log + profiles
     const emailSet = new Set<string>([
-      ...profiles.map(p => p.email),
+      ...profs.map(p => p.email),
       ...acts.map(a => a.user_email).filter(Boolean),
     ]);
     const merged = Array.from(emailSet).map(email => {
-      const profile = profiles.find(p => p.email === email);
+      const profile = profs.find(p => p.email === email);
       return { email, role: profile?.role || 'user', id: profile?.id || email };
     });
     setUsers(merged);
@@ -123,6 +125,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
             )}
           </button>
           <button
+            onClick={() => setTab('users')}
+            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition border-b-2 ${
+              tab === 'users' ? 'text-violet-700 border-violet-600' : 'text-slate-500 border-transparent hover:text-slate-700'
+            }`}
+          >
+            <UserCheck size={15} />
+            Users
+          </button>
+          <button
             onClick={() => setTab('report')}
             className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition border-b-2 ${
               tab === 'report' ? 'text-violet-700 border-violet-600' : 'text-slate-500 border-transparent hover:text-slate-700'
@@ -137,6 +148,46 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           {loading ? (
             <div className="flex justify-center py-12">
               <RefreshCw size={20} className="animate-spin text-slate-400" />
+            </div>
+          ) : tab === 'users' ? (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                  <UserCheck size={14} /> Registered Users ({profiles.length})
+                </h3>
+              </div>
+              <div className="border border-slate-200 rounded-xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Role</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {profiles.length === 0 ? (
+                      <tr><td colSpan={3} className="text-center py-8 text-slate-400">No registered users yet</td></tr>
+                    ) : (
+                      profiles.map(u => (
+                        <tr key={u.id} className="hover:bg-slate-50 transition">
+                          <td className="px-4 py-3 text-slate-900 font-medium">{u.email}</td>
+                          <td className="px-4 py-3">
+                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                              u.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {u.role || 'user'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-500 text-xs">
+                            {u.created_at ? new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ) : tab === 'requests' ? (
             <div className="space-y-4">
