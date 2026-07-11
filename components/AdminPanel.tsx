@@ -74,6 +74,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
     loadRequests();
   };
 
+  const handleBan = async (email: string) => {
+    if (!window.confirm(`Ban ${email}? They will no longer be able to access the site.`)) return;
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({ email, role: 'banned' }, { onConflict: 'email' });
+    if (error) { toast.error('Failed to ban user'); return; }
+    toast.success(`${email} has been banned`);
+    await loadReport();
+  };
+
+  const handleUnban = async (email: string) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role: 'user' })
+      .eq('email', email);
+    if (error) { toast.error('Failed to unban user'); return; }
+    toast.success(`${email} has been unbanned`);
+    await loadReport();
+  };
+
   const pendingRequests = requests.filter(r => r.status === 'pending');
 
   // Group activity by user for report
@@ -153,7 +173,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                  <UserCheck size={14} /> Registered Users ({profiles.length})
+                  <UserCheck size={14} /> All Users ({users.length})
                 </h3>
               </div>
               <div className="border border-slate-200 rounded-xl overflow-hidden">
@@ -163,27 +183,52 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                       <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Role</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Joined</th>
+                      <th className="px-4 py-3" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {profiles.length === 0 ? (
-                      <tr><td colSpan={3} className="text-center py-8 text-slate-400">No registered users yet</td></tr>
+                    {users.length === 0 ? (
+                      <tr><td colSpan={4} className="text-center py-8 text-slate-400">No users yet</td></tr>
                     ) : (
-                      profiles.map(u => (
-                        <tr key={u.id} className="hover:bg-slate-50 transition">
-                          <td className="px-4 py-3 text-slate-900 font-medium">{u.email}</td>
-                          <td className="px-4 py-3">
-                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                              u.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-600'
-                            }`}>
-                              {u.role || 'user'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-500 text-xs">
-                            {u.created_at ? new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
-                          </td>
-                        </tr>
-                      ))
+                      users.map(u => {
+                        const profile = profiles.find(p => p.email === u.email);
+                        return (
+                          <tr key={u.id} className={`hover:bg-slate-50 transition ${u.role === 'banned' ? 'opacity-50' : ''}`}>
+                            <td className="px-4 py-3 text-slate-900 font-medium">{u.email}</td>
+                            <td className="px-4 py-3">
+                              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                u.role === 'admin' ? 'bg-violet-100 text-violet-700' :
+                                u.role === 'banned' ? 'bg-red-100 text-red-600' :
+                                'bg-slate-100 text-slate-600'
+                              }`}>
+                                {u.role || 'user'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-slate-500 text-xs">
+                              {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              {u.role !== 'admin' && (
+                                u.role === 'banned' ? (
+                                  <button
+                                    onClick={() => handleUnban(u.email)}
+                                    className="text-xs px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition font-medium"
+                                  >
+                                    Unban
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleBan(u.email)}
+                                    className="text-xs px-2.5 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition font-medium"
+                                  >
+                                    Ban
+                                  </button>
+                                )
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

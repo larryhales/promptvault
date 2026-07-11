@@ -26,6 +26,12 @@ export function useAuth() {
         setUser(session?.user ?? null);
         if (session?.user) {
           const p = await getProfile(session.user.id);
+          if (p?.role === 'banned') {
+            await supabase.auth.signOut({ scope: 'local' });
+            setUser(null);
+            setProfile(null);
+            return;
+          }
           setProfile(p);
         } else {
           setProfile(null);
