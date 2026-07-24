@@ -284,15 +284,6 @@ export default function App() {
     }
   };
 
-  if (!authLoading && !user) {
-    return (
-      <>
-        <Toaster position="top-right" toastOptions={{ style: { borderRadius: '12px', fontSize: '14px' } }} />
-        <GatePage onSignIn={() => {}} signIn={signIn} signInWithGoogle={signInWithGoogle} />
-      </>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-50">
       <Toaster position="top-right" toastOptions={{ style: { borderRadius: '12px', fontSize: '14px' } }} />
