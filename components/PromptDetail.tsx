@@ -88,6 +88,12 @@ export const PromptDetail: React.FC<PromptDetailProps> = ({
   ].filter(Boolean) as string[];
 
   const isChain = steps.length > 1;
+  const stepRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  const jumpToStep = (i: number) => {
+    stepRefs.current[i]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const handleShare = async () => {
     const url = `${window.location.origin}?promptId=${prompt.id}`;
@@ -168,8 +174,25 @@ export const PromptDetail: React.FC<PromptDetailProps> = ({
           </div>
         </div>
 
+        {/* Step nav for multi-step prompts */}
+        {isChain && (
+          <div className="px-6 py-2 border-b border-slate-100 bg-slate-50 shrink-0 flex items-center gap-2 overflow-x-auto">
+            <span className="text-xs text-slate-400 shrink-0">Jump to:</span>
+            {steps.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => jumpToStep(i)}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200 transition"
+              >
+                <Layers size={10} />
+                Step {i + 1}{i === steps.length - 1 ? ' (Final)' : ''}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
           {/* Description */}
           <p className="text-slate-600 leading-relaxed">{prompt.description}</p>
 
@@ -208,13 +231,14 @@ export const PromptDetail: React.FC<PromptDetailProps> = ({
           {/* Prompt blocks */}
           <div className="space-y-4">
             {steps.map((step, i) => (
-              <PromptBlock
-                key={i}
-                label={isChain ? `Step ${i + 1}${i === steps.length - 1 ? ' — Final' : ''}` : 'Prompt'}
-                content={step}
-                isChain={isChain && i < steps.length - 1}
-                onCopied={() => onCopy(prompt.id)}
-              />
+              <div key={i} ref={el => { stepRefs.current[i] = el; }}>
+                <PromptBlock
+                  label={isChain ? `Step ${i + 1}${i === steps.length - 1 ? ' — Final' : ''}` : 'Prompt'}
+                  content={step}
+                  isChain={isChain && i < steps.length - 1}
+                  onCopied={() => onCopy(prompt.id)}
+                />
+              </div>
             ))}
           </div>
 
